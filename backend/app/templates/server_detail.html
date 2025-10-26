@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}{{ guild.name }}{% endblock %}
+
+{% block content %}
+<div class="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-8 shadow-xl fade-in">
+  <div class="flex items-center gap-5 mb-6">
+    <img src="{{ 'https://cdn.discordapp.com/icons/' ~ guild.id ~ '/' ~ guild.icon ~ '.png' if guild.icon else 'https://cdn.discordapp.com/embed/avatars/0.png' }}"
+         alt="icon"
+         class="w-20 h-20 rounded-full border border-[var(--border-color)] object-cover">
+    <div>
+      <h2 class="text-2xl font-semibold">{{ guild.name }}</h2>
+      <p class="text-[var(--text-sub)] text-sm">伺服器 ID：{{ guild.id }}</p>
+      {% if guild.owner %}
+        <p class="text-green-400 text-sm mt-1">你是此伺服器擁有者</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="grid sm:grid-cols-2 gap-3 text-[var(--text-main)] leading-relaxed">
+    {% if guild.approximate_member_count %}
+    <p>👥 <span class="text-[var(--text-sub)]">成員數：</span> {{ guild.approximate_member_count }}</p>
+    {% endif %}
+
+    {% if guild.approximate_presence_count %}
+    <p>🟢 <span class="text-[var(--text-sub)]">上線人數：</span> {{ guild.approximate_presence_count }}</p>
+    {% endif %}
+
+    {% if guild.verification_level is not none %}
+    <p>🛡️ <span class="text-[var(--text-sub)]">驗證等級：</span> {{ guild.verification_level }}</p>
+    {% endif %}
+
+    {% if guild.premium_tier %}
+    <p>💎 <span class="text-[var(--text-sub)]">加成等級：</span> {{ guild.premium_tier }}</p>
+    {% endif %}
+
+    {% if guild.premium_subscription_count %}
+    <p>🚀 <span class="text-[var(--text-sub)]">加成人數：</span> {{ guild.premium_subscription_count }}</p>
+    {% endif %}
+
+    {% if guild.features %}
+    <div class="col-span-2">
+      <p>⚙️ <span class="text-[var(--text-sub)]">啟用功能：</span></p>
+      <div class="mt-1">
+        {% for f in guild.features %}
+          <span class="inline-block bg-[var(--bg-hover)] text-xs px-2 py-1 rounded mr-1 mb-1">{{ f }}</span>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if guild.banner %}
+    <div class="col-span-2 mt-4">
+      <img src="https://cdn.discordapp.com/banners/{{ guild.id }}/{{ guild.banner }}.png?size=512"
+           alt="banner"
+           class="rounded-lg mt-2 border border-[var(--border-color)]">
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

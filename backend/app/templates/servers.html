@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>伺服器列表 | 控制面板</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --bg-dark: #0f1115;
+      --bg-card: #181a1f;
+      --bg-hover: #22242a;
+      --border-color: #2c2f36;
+      --text-main: #e6e7eb;
+      --text-sub: #a1a1a1;
+    }
+    body {
+      background: var(--bg-dark);
+      color: var(--text-main);
+      font-family: "Inter", "Noto Sans TC", sans-serif;
+    }
+    .fade-in { animation: fade 0.4s ease-in-out; }
+    @keyframes fade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .spinner {
+      border: 3px solid var(--border-color);
+      border-top: 3px solid #5865f2;
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      margin: 0 auto 10px;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center">
+
+  <!-- Header -->
+  <header class="w-full border-b border-[var(--border-color)] bg-[#121317]/80 backdrop-blur sticky top-0 z-20">
+    <div class="max-w-6xl mx-auto px-5 h-14 flex items-center justify-between">
+      <h1 class="font-semibold tracking-wide text-lg">伺服器列表 | 控制面板</h1>
+      <a href="/logout" class="text-sm text-[var(--text-sub)] hover:text-white transition">登出</a>
+    </div>
+  </header>
+
+  <main class="flex-1 w-full py-12 px-6">
+    <div id="content" class="container max-w-6xl mx-auto fade-in">
+      <div class="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-10 shadow-xl text-center">
+        <div class="spinner"></div>
+        <h2 class="text-lg font-semibold">正在載入伺服器列表...</h2>
+      </div>
+    </div>
+  </main>
+
+  <script>
+  async function loadServers() {
+    const container = document.getElementById("content");
+    try {
+      const res = await fetch("/api/servers", { cache: "no-store" });
+      if (res.status === 401) {
+        container.innerHTML = `
+          <div class="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-10 shadow-xl text-center">
+            <h2 class="text-2xl font-semibold mb-2">需要登入</h2>
+            <p class="text-[var(--text-sub)] mb-4">請使用 Discord 帳號登入以繼續</p>
+            <a href="/login" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white font-semibold">以 Discord 登入</a>
+          </div>`;
+        return;
+      }
+
+      const data = await res.json();
+      const user = data.user?.username || "使用者";
+      const guilds = data.guilds || [];
+
+      if (!Array.isArray(guilds) || !guilds.length) {
+        container.innerHTML = `
+          <div class="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-10 shadow-xl text-center">
+            <h2 class="text-2xl font-semibold mb-2">未找到伺服器</h2>
+            <p class="text-[var(--text-sub)]">請確認你擁有管理員權限或邀請機器人進入伺服器。</p>
+          </div>`;
+        return;
+      }
+
+      const hour = new Date().getHours();
+      const greet =
+        hour < 12 ? "早安" :
+        hour < 18 ? "午安" :
+        hour < 22 ? "晚安" : "深夜好";
+
+      container.innerHTML = `
+        <div class="mb-8">
+          <h2 class="text-3xl font-semibold mb-1">${greet}，${user}</h2>
+          <p class="text-[var(--text-sub)] text-sm">請選擇一個伺服器開始使用。</p>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5" id="serverList"></div>`;
+
+      const list = document.getElementById("serverList");
+      guilds.forEach(g => {
+        const icon = g.icon
+          ? `https://cdn.discordapp.com/icons/${g.id}/${g.icon}.png`
+          : "https://cdn.discordapp.com/embed/avatars/0.png";
+
+        const card = document.createElement("div");
+        card.className =
+          "bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl p-5 cursor-pointer hover:bg-[var(--bg-hover)] transition transform hover:-translate-y-1 hover:shadow-lg flex items-center gap-4 fade-in";
+        card.onclick = () => location.href = "/server/" + g.id;
+        card.innerHTML = `
+          <img src="${icon}" alt="icon" class="w-12 h-12 rounded-full border border-[var(--border-color)] object-cover">
+          <div class="text-left overflow-hidden">
+            <h3 class="font-semibold text-base truncate">${g.name}</h3>
+            <p class="text-[var(--text-sub)] text-xs">ID: ${g.id}</p>
+          </div>`;
+        list.appendChild(card);
+      });
+    } catch (err) {
+      container.innerHTML = `
+        <div class="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-10 shadow-xl text-center">
+          <h2 class="text-2xl font-semibold mb-2">發生錯誤</h2>
+          <p class="text-[var(--text-sub)]">${err.message}</p>
+        </div>`;
+    }
+  }
+
+  loadServers();
+  </script>
+</body>
+</html>

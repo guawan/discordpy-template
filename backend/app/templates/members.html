@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% block title %}成員管理{% endblock %}
+
+{% block content %}
+<div class="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-xl fade-in">
+  <h2 class="text-2xl font-semibold mb-6">成員列表 ({{ members|length }})</h2>
+  <div class="max-w-full overflow-x-auto">
+    <table class="min-w-[600px] w-full border border-[var(--border-color)] text-sm">
+      <thead class="bg-[var(--bg-hover)] text-left">
+        <tr>
+          <th class="px-4 py-2">頭像</th>
+          <th class="px-4 py-2">使用者名稱</th>
+          <th class="px-4 py-2">ID</th>
+          <th class="px-4 py-2">操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in members %}
+        <tr class="border-t border-[var(--border-color)] hover:bg-[var(--bg-hover)] transition">
+          <td class="px-4 py-2">
+            {% set avatar_url = m.user.avatar
+              and "https://cdn.discordapp.com/avatars/%s/%s.png?size=64" % (m.user.id, m.user.avatar)
+              or "https://cdn.discordapp.com/embed/avatars/%d.png" % (m.user.id | int % 5)
+            %}
+            <img src="{{ avatar_url }}" class="w-10 h-10 rounded-full">
+          </td>
+          <td class="px-4 py-2">{{ m.user.username }}</td>
+          <td class="px-4 py-2">{{ m.user.id }}</td>
+          <td class="px-4 py-2">
+            <button onclick="kick('{{ guild.id }}','{{ m.user.id }}')" class="px-3 py-1 bg-yellow-600 hover:bg-yellow-500 rounded text-white text-xs">踢出</button>
+            <button onclick="ban('{{ guild.id }}','{{ m.user.id }}')" class="px-3 py-1 bg-red-600 hover:bg-red-500 rounded text-white text-xs ml-2">封鎖</button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 彈窗 -->
+<div id="msgModal" class="fixed inset-0 hidden items-center justify-center bg-black/60 z-50">
+  <div class="modal-box bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-2xl p-8 text-center max-w-sm w-[90%]">
+    <h3 id="msgTitle" class="text-xl font-semibold mb-2 text-[var(--text-main)]">訊息</h3>
+    <p id="msgText" class="text-[var(--text-sub)] mb-6"></p>
+  </div>
+</div>
+
+<style>
+  /* 顯示/隱藏動畫 */
+  #msgModal {
+    display: none;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+  #msgModal.show {
+    display: flex;
+    opacity: 1;
+    animation: fadeInBg 0.25s ease forwards;
+  }
+  #msgModal.hide {
+    opacity: 0;
+    animation: fadeOutBg 0.25s ease forwards;
+  }
+
+  .modal-box {
+    opacity: 0;
+    transform: scale(0.9);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+  #msgModal.show .modal-box {
+    opacity: 1;
+    transform: scale(1);
+  }
+  #msgModal.hide .modal-box {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+
+  @keyframes fadeInBg {
+    from { background-color: rgba(0,0,0,0); }
+    to { background-color: rgba(0,0,0,0.6); }
+  }
+  @keyframes fadeOutBg {
+    from { background-color: rgba(0,0,0,0.6); }
+    to { background-color: rgba(0,0,0,0); }
+  }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const msgModal=document.getElementById("msgModal");
+  const msgTitle=document.getElementById("msgTitle");
+  const msgText=document.getElementById("msgText");
+
+  function hideMsg(){
+    msgModal.classList.remove("show");
+    msgModal.classList.add("hide");
+    setTimeout(()=>{
+      msgModal.classList.add("hidden");
+      msgModal.classList.remove("hide");
+    },250);
+  }
+
+  function showMsg(title,text){
+    msgTitle.textContent=title;
+    msgText.textContent=text;
+    msgModal.classList.remove("hidden");
+    msgModal.classList.add("show");
+    const modalBox=msgModal.querySelector(".modal-box");
+    modalBox.querySelectorAll("button").forEach(b=>b.remove());
+    const ok=document.createElement("button");
+    ok.textContent="確定";
+    ok.className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded text-white";
+    ok.onclick=hideMsg;
+    modalBox.appendChild(ok);
+  }
+
+  function showConfirm(title,text,onConfirm){
+    msgTitle.textContent=title;
+    msgText.textContent=text;
+    msgModal.classList.remove("hidden");
+    msgModal.classList.add("show");
+    const modalBox=msgModal.querySelector(".modal-box");
+    modalBox.querySelectorAll("button").forEach(b=>b.remove());
+    const confirmBtn=document.createElement("button");
+    confirmBtn.textContent="確定";
+    confirmBtn.className="px-4 py-2 bg-red-600 hover:bg-red-500 rounded text-white mx-2";
+    confirmBtn.onclick=()=>{hideMsg();onConfirm();};
+    const cancelBtn=document.createElement("button");
+    cancelBtn.textContent="取消";
+    cancelBtn.className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded text-white mx-2";
+    cancelBtn.onclick=hideMsg;
+    const btnBox=document.createElement("div");
+    btnBox.className="flex justify-center mt-4";
+    btnBox.append(confirmBtn,cancelBtn);
+    modalBox.appendChild(btnBox);
+  }
+
+  async function kick(gid,uid){
+    showConfirm("確認操作","確定要踢出該成員嗎？",async()=>{
+      const res=await fetch(`/api/guilds/${gid}/kick/${uid}`,{method:"POST"});
+      const data=await res.json();
+      showMsg(data.success?"操作成功":"操作失敗",
+              data.success?"已成功踢出該成員。":"操作執行失敗，請稍後再試。");
+      if(data.success) setTimeout(()=>location.reload(),2000);
+    });
+  }
+
+  async function ban(gid,uid){
+    showConfirm("確認操作","確定要封鎖該成員嗎？",async()=>{
+      const res=await fetch(`/api/guilds/${gid}/ban/${uid}`,{method:"POST"});
+      const data=await res.json();
+      showMsg(data.success?"操作成功":"操作失敗",
+              data.success?"已成功封鎖該成員。":"操作執行失敗，請稍後再試。");
+      if(data.success) setTimeout(()=>location.reload(),2000);
+    });
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>錯誤 {{ code }} | 控制面板</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --bg-dark: #0f1115;
+      --bg-card: #181a1f;
+      --bg-hover: #22242a;
+      --border-color: #2c2f36;
+      --text-main: #e6e7eb;
+      --text-sub: #a1a1a1;
+    }
+    body {
+      background: var(--bg-dark);
+      color: var(--text-main);
+      font-family: "Inter", "Noto Sans TC", sans-serif;
+    }
+    .fade-in { animation: fade 0.4s ease-in-out; }
+    @keyframes fade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    .spinner {
+      border: 3px solid var(--border-color);
+      border-top: 3px solid #ef4444;
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      margin: 0 auto 10px;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+
+<body class="min-h-screen flex flex-col items-center">
+  <!-- Header -->
+  <header class="w-full border-b border-[var(--border-color)] bg-[#121317]/80 backdrop-blur sticky top-0 z-20">
+    <div class="max-w-6xl mx-auto px-5 h-14 flex items-center justify-between">
+      <h1 class="font-semibold tracking-wide text-lg">控制面板</h1>
+      <a href="/" class="text-sm text-[var(--text-sub)] hover:text-white transition">返回主頁</a>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <main class="flex-1 w-full py-12 px-6 flex items-center justify-center">
+    <div class="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-10 shadow-xl text-center fade-in max-w-md w-full">
+      <div class="spinner"></div>
+      <h1 class="text-6xl font-bold text-red-500 mb-4">{{ code }}</h1>
+      <p class="text-lg text-[var(--text-sub)] mb-6">{{ message }}</p>
+      <a href="/" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white font-semibold transition">
+        返回主頁
+      </a>
+    </div>
+  </main>
+</body>
+</html>
